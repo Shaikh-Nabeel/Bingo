@@ -3,11 +3,18 @@ package com.nabeel130.bingo;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.widget.ArrayAdapter;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
@@ -15,12 +22,15 @@ import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
+import com.nabeel130.bingo.DbController.DbHandler;
 
 import java.io.File;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private ListView listViewOfSong;
+    private String[] items;
+    private  ArrayList<File> mySongs;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,22 +41,26 @@ public class MainActivity extends AppCompatActivity {
                 .withListener(new PermissionListener() {
                     @Override
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
-                        ArrayList<File> mySongs = fetchSong(Environment.getExternalStorageDirectory());
-                        String[] items = new String[mySongs.size()];
+                        mySongs = fetchSong(Environment.getExternalStorageDirectory());
+//                        for(int i =0; i<mySongs.size(); i++){
+//                            Log.d("hashcode", mySongs.get(i).hashCode()+"");
+//                        }
+                        items = new String[mySongs.size()];
                         for(int i=0; i<mySongs.size(); i++){
                             items[i] = mySongs.get(i).getName().replace(".mp3","");
                         }
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, items);
-                        listViewOfSong.setAdapter(adapter);
+                        CustomAdapter ca = new CustomAdapter();
+                        listViewOfSong.setAdapter(ca);
 
                         listViewOfSong.setOnItemClickListener((parent, view, position, id) -> {
                             Intent intent = new Intent(MainActivity.this,PlaySong.class);
-                            String currSong = listViewOfSong.getItemAtPosition(position).toString();
+                            String currSong = (String) listViewOfSong.getItemAtPosition(position);
                             intent.putExtra("songList",mySongs);
                             intent.putExtra("currSong",currSong);
                             intent.putExtra("position",position);
                             startActivity(intent);
                         });
+
                     }
 
                     @Override
@@ -60,6 +74,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .check();
+
+        //Favorite Song Icon
+        ImageView favSong = findViewById(R.id.favSongIcon);
+        favSong.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this,FavoriteSongs.class)
+                    .putExtra("mySongs", mySongs);
+            startActivity(intent);
+        });
     }
 
     public ArrayList<File> fetchSong(File file){
@@ -76,6 +98,51 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return list;
+    }
+
+
+    class CustomAdapter extends BaseAdapter
+    {
+
+        @Override
+        public int getCount() {
+            return items.length;
+        }
+
+        @Override
+        public Object getItem(int i) {
+            return null;
+        }
+
+        @Override
+        public long getItemId(int i) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int i, View view, ViewGroup viewGroup) {
+            @SuppressLint({"ViewHolder", "InflateParams"}) View myView = getLayoutInflater().inflate(R.layout.list_item, null);
+            TextView textSong = myView.findViewById(R.id.txtView1);
+            textSong.setSelected(true);
+            textSong.setText(items[i]);
+
+            ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
+            toggleButton.setOnClickListener(v -> {
+                if(toggleButton.isChecked()){
+                    Log.d("hashcode","if block");
+                    DbHandler db = new DbHandler(MainActivity.this);
+                    db.addSongs(mySongs.get(i).hashCode());
+
+                }
+                else{
+                    DbHandler db = new DbHandler(MainActivity.this);
+                    if(db.removeSong(mySongs.get(i).hashCode())){
+                        Log.d("dbQuery", "1 song removed");
+                    }
+                }
+            });
+            return myView;
+        }
     }
 
 }
