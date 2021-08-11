@@ -1,43 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/linLayout"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:orientation="vertical"
-        android:layout_alignTop="@+id/listViewOfSongs"
         >
 
-        <ImageView
-            android:id="@+id/favSongIcon"
-            android:layout_width="45dp"
-            android:layout_height="45dp"
-            app:srcCompat="@drawable/favorite_songs_icon"
-            android:layout_marginEnd="5dp"
+        <Button
+            android:id="@+id/sorting"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_gravity="start"
+            android:layout_marginStart="5dp"
             android:layout_marginTop="5dp"
-            android:layout_gravity="end"
-            android:contentDescription="@string/app_name"
-            />
+            android:textSize="12sp"
+            android:text="@string/SortByName"
+            android:textAllCaps="false" />
 
-    </LinearLayout>
+        <Button
+            android:id="@+id/favSongIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="5dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:gravity="end"
+            android:text="@string/favorite"
+            android:textAllCaps="false" />
+
+        <View
+            android:id="@+id/simpleView1"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="#c0c0c0"
+            />
+    </RelativeLayout>
+
 
     <ListView
         android:id="@+id/listViewOfSongs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/linLayout"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:paddingTop="50dp"
         />
 
 </RelativeLayout>

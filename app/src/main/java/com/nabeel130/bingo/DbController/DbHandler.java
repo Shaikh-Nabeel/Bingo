@@ -59,6 +59,7 @@ public class DbHandler extends SQLiteOpenHelper {
                 songList.add(song);
             }while(cursor.moveToNext());
         }
+        db.close();
         return songList;
     }
 }

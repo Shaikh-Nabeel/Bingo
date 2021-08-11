@@ -12,9 +12,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Bingo">
         <activity
-            android:name=".PlaySong"
-            android:parentActivityName=".MainActivity" />
-        <activity android:name=".FavoriteSongs"/>
+            android:name=".PlaySong" />
+        <activity android:name=".FavoriteSongs" android:parentActivityName=".MainActivity"/>
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

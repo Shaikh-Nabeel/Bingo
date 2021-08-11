@@ -11,7 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -26,11 +26,23 @@ import com.nabeel130.bingo.DbController.DbHandler;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
     private ListView listViewOfSong;
-    private String[] items;
-    private  ArrayList<File> mySongs;
+    private static String[] items;
+    private static ArrayList<File> mySongs;
+    public static ArrayList<String> favSongList;
+    private static boolean isSortedByName = false;
+//    public static boolean isFavSongListUpdated = false;
+    private CustomAdapter ca;
+    @Override
+    protected void onStart() {
+        super.onStart();
+        ca.notifyDataSetChanged();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,26 +53,32 @@ public class MainActivity extends AppCompatActivity {
                 .withListener(new PermissionListener() {
                     @Override
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
+                        //fetching all the songs
                         mySongs = fetchSong(Environment.getExternalStorageDirectory());
-//                        for(int i =0; i<mySongs.size(); i++){
-//                            Log.d("hashcode", mySongs.get(i).hashCode()+"");
-//                        }
+
+                        //fetching favourite songs
+                        DbHandler dbHandler = new DbHandler(getApplicationContext());
+                        favSongList = (ArrayList<String>) dbHandler.getAllSongs();
+
+                        //array of songs name
                         items = new String[mySongs.size()];
                         for(int i=0; i<mySongs.size(); i++){
                             items[i] = mySongs.get(i).getName().replace(".mp3","");
                         }
-                        CustomAdapter ca = new CustomAdapter();
+
+                        ca = new CustomAdapter();
                         listViewOfSong.setAdapter(ca);
 
-                        listViewOfSong.setOnItemClickListener((parent, view, position, id) -> {
-                            Intent intent = new Intent(MainActivity.this,PlaySong.class);
-                            String currSong = (String) listViewOfSong.getItemAtPosition(position);
-                            intent.putExtra("songList",mySongs);
-                            intent.putExtra("currSong",currSong);
-                            intent.putExtra("position",position);
-                            startActivity(intent);
+                        //sorting functions
+                        Button sortingBtn = findViewById(R.id.sorting);
+                        sortingBtn.setOnClickListener(v -> {
+                            sortByName();
+                            ca.notifyDataSetChanged();
+                            isSortedByName = true;
                         });
 
+                        if(isSortedByName)
+                            sortingBtn.performClick();
                     }
 
                     @Override
@@ -76,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
                 .check();
 
         //Favorite Song Icon
-        ImageView favSong = findViewById(R.id.favSongIcon);
+        Button favSong = findViewById(R.id.favSongIcon);
         favSong.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this,FavoriteSongs.class)
                     .putExtra("mySongs", mySongs);
@@ -84,6 +102,27 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //redirecting to playSong Activity
+    public void openPlaySongActivity(int position){
+        Intent intent = new Intent(MainActivity.this,PlaySong.class);
+        intent.putExtra("songList",mySongs);
+        intent.putExtra("position",position);
+        startActivity(intent);
+    }
+
+    //function to refresh the activity
+    public void refreshActivity(){
+        finish();
+        startActivity(getIntent());
+    }
+
+    public void sortByName(){
+//        Collections.sort(mySongs, (o1, o2) -> o1.getName().compareTo(o2.getName()));
+        Arrays.sort(items);
+
+    }
+
+    //fetching song from external storage
     public ArrayList<File> fetchSong(File file){
         ArrayList<File> list = new ArrayList<>();
         File[] songs = file.listFiles();
@@ -125,21 +164,28 @@ public class MainActivity extends AppCompatActivity {
             TextView textSong = myView.findViewById(R.id.txtView1);
             textSong.setSelected(true);
             textSong.setText(items[i]);
-
+            textSong.setOnClickListener(v -> openPlaySongActivity(i));
             ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
+
+            if(favSongList.contains(Integer.toString(mySongs.get(i).hashCode()))){
+                toggleButton.setChecked(true);
+            }
             toggleButton.setOnClickListener(v -> {
                 if(toggleButton.isChecked()){
-                    Log.d("hashcode","if block");
                     DbHandler db = new DbHandler(MainActivity.this);
-                    db.addSongs(mySongs.get(i).hashCode());
-
+                    int hCode = mySongs.get(i).hashCode();
+                    db.addSongs(hCode);
+                    favSongList.add(Integer.toString(hCode));
                 }
                 else{
                     DbHandler db = new DbHandler(MainActivity.this);
                     if(db.removeSong(mySongs.get(i).hashCode())){
+                        favSongList.remove(Integer.toString(mySongs.get(i).hashCode()));
                         Log.d("dbQuery", "1 song removed");
                     }
+
                 }
+                Log.d("dbQuery", "f: "+favSongList.toString());
             });
             return myView;
         }

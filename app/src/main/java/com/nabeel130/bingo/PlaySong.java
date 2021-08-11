@@ -2,10 +2,13 @@ package com.nabeel130.bingo;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -21,6 +24,8 @@ public class PlaySong extends AppCompatActivity {
     int position;
     SeekBar seekBar;
     Thread updateSeekBar;
+    private TextView currentTime;
+    private TextView totalTime;
 
 
     @Override
@@ -32,6 +37,8 @@ public class PlaySong extends AppCompatActivity {
         play = findViewById(R.id.play);
         previous = findViewById(R.id.previous);
         next = findViewById(R.id.next);
+        currentTime = findViewById(R.id.currentDuration);
+        totalTime = findViewById(R.id.totalDuration);
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
         songs =(ArrayList) bundle.getParcelableArrayList("songList");
@@ -45,7 +52,7 @@ public class PlaySong extends AppCompatActivity {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
+                currentTime.setText(createTime(seekBar.getProgress()));
             }
 
             @Override
@@ -75,6 +82,14 @@ public class PlaySong extends AppCompatActivity {
 
     }
 
+    @SuppressLint("HandlerLeak")
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message message){
+            currentTime.setText(createTime(message.what));
+        }
+    };
+
     private void manageSeekBar(){
 
         updateSeekBar = new Thread(){
@@ -85,7 +100,10 @@ public class PlaySong extends AppCompatActivity {
                     while(currentPosition < mediaPlayer.getDuration()){
                         currentPosition = mediaPlayer.getCurrentPosition();
                         seekBar.setProgress(currentPosition);
-                        sleep(500);
+                        Message message = new Message();
+                        message.what = currentPosition;
+                        handler.sendMessage(message);
+                        sleep(1000);
                     }
                 }
                 catch(Exception e){
@@ -94,9 +112,14 @@ public class PlaySong extends AppCompatActivity {
             }
         };
         updateSeekBar.start();
+
     }
 
+
+
     private void playSong(int position){
+        currentTime.setText("00:00");
+        totalTime.setText("00:00");
         try {
             if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                 mediaPlayer.stop();
@@ -117,6 +140,7 @@ public class PlaySong extends AppCompatActivity {
 
         }
         manageSeekBar();
+        totalTime.setText(createTime(mediaPlayer.getDuration()));
         seekBar.setMax(mediaPlayer.getDuration());
         mediaPlayer.setOnCompletionListener(mp -> playNextSong());
     }
@@ -136,4 +160,20 @@ public class PlaySong extends AppCompatActivity {
             position--;
         playSong(position);
     }
+    public String createTime(int duration)
+    {
+        String time = "";
+        int min = duration/1000/60;
+        int sec = duration/1000%60;
+
+        time+=min+":";
+        if(sec<10)
+        {
+            time+="0";
+        }
+        time+=sec;
+
+        return time;
+    }
 }
+
