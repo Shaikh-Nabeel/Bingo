@@ -3,4 +3,6 @@
     <string name="space"> </string>
     <string name="favorite">Favourite</string>
     <string name="SortByName">Sort by name</string>
+    <string name="defaultSort">default</string>
+    <string name="defaultTime">00:00</string>
 </resources>

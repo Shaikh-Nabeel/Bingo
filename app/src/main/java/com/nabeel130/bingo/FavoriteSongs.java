@@ -3,7 +3,6 @@ package com.nabeel130.bingo;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -19,7 +18,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class FavoriteSongs extends AppCompatActivity {
-    private ListView listView;
     private ArrayList<File> finalList;
     private String[] items;
 
@@ -32,7 +30,7 @@ public class FavoriteSongs extends AppCompatActivity {
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.fav_songs);
-        listView =(ListView) findViewById(R.id.listViewOfFavSong);
+        ListView listView = findViewById(R.id.listViewOfFavSong);
 
         //intent activity
         Intent intent = getIntent();

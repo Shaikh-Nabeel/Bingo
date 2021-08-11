@@ -118,8 +118,8 @@ public class PlaySong extends AppCompatActivity {
 
 
     private void playSong(int position){
-        currentTime.setText("00:00");
-        totalTime.setText("00:00");
+        currentTime.setText(getString(R.string.defaultTime));
+        totalTime.setText(getString(R.string.defaultTime));
         try {
             if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                 mediaPlayer.stop();

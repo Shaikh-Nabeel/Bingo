@@ -27,16 +27,15 @@ import com.nabeel130.bingo.DbController.DbHandler;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
     private ListView listViewOfSong;
     private static String[] items;
     private static ArrayList<File> mySongs;
     public static ArrayList<String> favSongList;
-    private static boolean isSortedByName = false;
-//    public static boolean isFavSongListUpdated = false;
+//    private static final boolean isSortedByName = false;
     private CustomAdapter ca;
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -62,9 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
                         //array of songs name
                         items = new String[mySongs.size()];
-                        for(int i=0; i<mySongs.size(); i++){
-                            items[i] = mySongs.get(i).getName().replace(".mp3","");
-                        }
+                        defaultSort();
 
                         ca = new CustomAdapter();
                         listViewOfSong.setAdapter(ca);
@@ -72,12 +69,19 @@ public class MainActivity extends AppCompatActivity {
                         //sorting functions
                         Button sortingBtn = findViewById(R.id.sorting);
                         sortingBtn.setOnClickListener(v -> {
-                            sortByName();
-                            ca.notifyDataSetChanged();
-                            isSortedByName = true;
+                            if(sortingBtn.getText().equals(getString(R.string.SortByName))) {
+                                sortByName();
+                                sortingBtn.setText(R.string.defaultSort);
+                                ca.notifyDataSetChanged();
+                            }
+                            else{
+                                defaultSort();
+                                ca.notifyDataSetChanged();
+                                sortingBtn.setText(R.string.SortByName);
+                            }
                         });
 
-                        if(isSortedByName)
+                        if(sortingBtn.getText().equals(getString(R.string.defaultSort)))
                             sortingBtn.performClick();
                     }
 
@@ -117,9 +121,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sortByName(){
-//        Collections.sort(mySongs, (o1, o2) -> o1.getName().compareTo(o2.getName()));
         Arrays.sort(items);
+    }
 
+    public void defaultSort(){
+        for(int i=0; i<mySongs.size(); i++){
+            items[i] = mySongs.get(i).getName().replace(".mp3","");
+        }
     }
 
     //fetching song from external storage
