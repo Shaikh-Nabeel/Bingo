@@ -19,12 +19,19 @@ import java.util.ArrayList;
 
 public class FavoriteSongs extends AppCompatActivity {
     private ArrayList<File> finalList;
-    private String[] items;
+    private static String[] items;
+    private CustomAdapter customAdapter;
 
 //    @Override
 //    public void onBackPressed(){
 //        super.onBackPressed();
 //    }
+
+    @Override
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+
+    }
 
     @Override
     protected void onCreate(Bundle b) {
@@ -55,15 +62,19 @@ public class FavoriteSongs extends AppCompatActivity {
             }
 
             //extracting name of the song
-            items = new String[finalList.size()];
-            for (int i = 0; i < finalList.size(); i++) {
-                items[i] = finalList.get(i).getName().replace(".mp3","");
-            }
-            CustomAdapter customAdapter = new CustomAdapter();
+            refreshList();
+            customAdapter = new CustomAdapter();
             listView.setAdapter(customAdapter);
         }
 
 
+    }
+
+    public void refreshList(){
+        items = new String[finalList.size()];
+        for(int i=0; i<finalList.size(); i++){
+            items[i] = finalList.get(i).getName().replace(".mp3","");
+        }
     }
 
     public void openPlaySongActivity(int position){
@@ -105,13 +116,12 @@ public class FavoriteSongs extends AppCompatActivity {
                 if (!toggleButton.isChecked()) {
                     DbHandler db = new DbHandler(FavoriteSongs.this);
                     if(db.removeSong(finalList.get(i).hashCode())){
-//                        Log.d("dbQuery", MainActivity.favSongList.toString()+" index "+ i);
                         MainActivity.favSongList.remove(i);
                         finalList.remove(i);
+                        refreshList();
                     }
                 }
-                finish();
-                startActivity(getIntent());
+                this.notifyDataSetChanged();
             });
             return myView;
         }

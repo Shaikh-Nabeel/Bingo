@@ -2,7 +2,7 @@
     <string name="app_name">Bingo</string>
     <string name="space"> </string>
     <string name="favorite">Favourite</string>
-    <string name="SortByName">Sort by name</string>
-    <string name="defaultSort">default</string>
+    <string name="SortByName">Sort by Name</string>
+    <string name="defaultSort">All Song</string>
     <string name="defaultTime">00:00</string>
 </resources>

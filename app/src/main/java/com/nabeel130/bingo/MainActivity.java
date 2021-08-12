@@ -27,19 +27,22 @@ import com.nabeel130.bingo.DbController.DbHandler;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
     private ListView listViewOfSong;
     private static String[] items;
     private static ArrayList<File> mySongs;
+    private static ArrayList<File> mySongsCopy;
     public static ArrayList<String> favSongList;
-//    private static final boolean isSortedByName = false;
+    private static boolean isSortedByName = false;
     private CustomAdapter ca;
 
     @Override
     protected void onStart() {
         super.onStart();
-        ca.notifyDataSetChanged();
+        if(ca != null)
+            ca.notifyDataSetChanged();
     }
 
     @Override
@@ -54,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
                         //fetching all the songs
                         mySongs = fetchSong(Environment.getExternalStorageDirectory());
+                        mySongsCopy = new ArrayList<>();
+                        mySongsCopy.addAll(mySongs);
 
                         //fetching favourite songs
                         DbHandler dbHandler = new DbHandler(getApplicationContext());
@@ -61,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
                         //array of songs name
                         items = new String[mySongs.size()];
-                        defaultSort();
+                        defaultSort(mySongs);
 
                         ca = new CustomAdapter();
                         listViewOfSong.setAdapter(ca);
@@ -71,17 +76,19 @@ public class MainActivity extends AppCompatActivity {
                         sortingBtn.setOnClickListener(v -> {
                             if(sortingBtn.getText().equals(getString(R.string.SortByName))) {
                                 sortByName();
+                                isSortedByName = true;
                                 sortingBtn.setText(R.string.defaultSort);
                                 ca.notifyDataSetChanged();
                             }
                             else{
-                                defaultSort();
+                                defaultSort(mySongs);
+                                isSortedByName = false;
                                 ca.notifyDataSetChanged();
                                 sortingBtn.setText(R.string.SortByName);
                             }
                         });
 
-                        if(sortingBtn.getText().equals(getString(R.string.defaultSort)))
+                        if(isSortedByName)
                             sortingBtn.performClick();
                     }
 
@@ -121,12 +128,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sortByName(){
-        Arrays.sort(items);
+        Collections.sort(mySongsCopy, (o1,o2)->o1.getName().compareTo(o2.getName()));
+        defaultSort(mySongsCopy);
     }
 
-    public void defaultSort(){
-        for(int i=0; i<mySongs.size(); i++){
-            items[i] = mySongs.get(i).getName().replace(".mp3","");
+    public void defaultSort(ArrayList<File> song){
+        for(int i=0; i<song.size(); i++){
+            items[i] = song.get(i).getName().replace(".mp3","");
         }
     }
 
@@ -174,24 +182,24 @@ public class MainActivity extends AppCompatActivity {
             textSong.setText(items[i]);
             textSong.setOnClickListener(v -> openPlaySongActivity(i));
             ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
-
-            if(favSongList.contains(Integer.toString(mySongs.get(i).hashCode()))){
+            ArrayList<File> list;
+            list = isSortedByName?mySongsCopy:mySongs;
+            if(favSongList.contains(Integer.toString(list.get(i).hashCode()))){
                 toggleButton.setChecked(true);
             }
             toggleButton.setOnClickListener(v -> {
                 if(toggleButton.isChecked()){
                     DbHandler db = new DbHandler(MainActivity.this);
-                    int hCode = mySongs.get(i).hashCode();
+                    int hCode = list.get(i).hashCode();
                     db.addSongs(hCode);
                     favSongList.add(Integer.toString(hCode));
                 }
                 else{
                     DbHandler db = new DbHandler(MainActivity.this);
-                    if(db.removeSong(mySongs.get(i).hashCode())){
-                        favSongList.remove(Integer.toString(mySongs.get(i).hashCode()));
+                    if(db.removeSong(list.get(i).hashCode())){
+                        favSongList.remove(Integer.toString(list.get(i).hashCode()));
                         Log.d("dbQuery", "1 song removed");
                     }
-
                 }
                 Log.d("dbQuery", "f: "+favSongList.toString());
             });
