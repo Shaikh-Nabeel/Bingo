@@ -2,13 +2,10 @@ package com.nabeel130.bingo;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -82,14 +79,6 @@ public class PlaySong extends AppCompatActivity {
 
     }
 
-    @SuppressLint("HandlerLeak")
-    private Handler handler = new Handler(){
-        @Override
-        public void handleMessage(Message message){
-            currentTime.setText(createTime(message.what));
-        }
-    };
-
     private void manageSeekBar(){
 
         updateSeekBar = new Thread(){
@@ -100,9 +89,6 @@ public class PlaySong extends AppCompatActivity {
                     while(currentPosition < mediaPlayer.getDuration()){
                         currentPosition = mediaPlayer.getCurrentPosition();
                         seekBar.setProgress(currentPosition);
-                        Message message = new Message();
-                        message.what = currentPosition;
-                        handler.sendMessage(message);
                         sleep(1000);
                     }
                 }

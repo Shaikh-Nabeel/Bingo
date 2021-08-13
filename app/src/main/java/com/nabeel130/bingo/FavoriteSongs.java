@@ -3,6 +3,7 @@ package com.nabeel130.bingo;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -20,18 +21,6 @@ import java.util.ArrayList;
 public class FavoriteSongs extends AppCompatActivity {
     private ArrayList<File> finalList;
     private static String[] items;
-    private CustomAdapter customAdapter;
-
-//    @Override
-//    public void onBackPressed(){
-//        super.onBackPressed();
-//    }
-
-    @Override
-    protected void onUserLeaveHint() {
-        super.onUserLeaveHint();
-
-    }
 
     @Override
     protected void onCreate(Bundle b) {
@@ -44,8 +33,6 @@ public class FavoriteSongs extends AppCompatActivity {
         Bundle bundle = intent.getExtras();
         ArrayList<File> mySong =(ArrayList) bundle.getParcelableArrayList("mySongs");
 
-        //accessing table from db
-//        DbHandler dbHandler = new DbHandler(getApplicationContext());
         ArrayList<String> favSong = MainActivity.favSongList;
 
         if(!favSong.isEmpty() &&  !mySong.isEmpty()) {
@@ -63,10 +50,9 @@ public class FavoriteSongs extends AppCompatActivity {
 
             //extracting name of the song
             refreshList();
-            customAdapter = new CustomAdapter();
+            CustomAdapter customAdapter = new CustomAdapter();
             listView.setAdapter(customAdapter);
         }
-
 
     }
 
@@ -119,9 +105,11 @@ public class FavoriteSongs extends AppCompatActivity {
                         MainActivity.favSongList.remove(i);
                         finalList.remove(i);
                         refreshList();
+                        Log.d("dbQuery", "1 song removed");
                     }
                 }
                 this.notifyDataSetChanged();
+                MainActivity.ca.notifyDataSetChanged();
             });
             return myView;
         }

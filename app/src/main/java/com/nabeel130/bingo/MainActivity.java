@@ -26,24 +26,17 @@ import com.nabeel130.bingo.DbController.DbHandler;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
+
     private ListView listViewOfSong;
     private static String[] items;
     private static ArrayList<File> mySongs;
     private static ArrayList<File> mySongsCopy;
     public static ArrayList<String> favSongList;
     private static boolean isSortedByName = false;
-    private CustomAdapter ca;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        if(ca != null)
-            ca.notifyDataSetChanged();
-    }
+    public static CustomAdapter ca;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,17 +107,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //redirecting to playSong Activity
-    public void openPlaySongActivity(int position){
+    public void openPlaySongActivity(int position, ArrayList<File> list){
         Intent intent = new Intent(MainActivity.this,PlaySong.class);
-        intent.putExtra("songList",mySongs);
+        intent.putExtra("songList",list);
         intent.putExtra("position",position);
         startActivity(intent);
-    }
-
-    //function to refresh the activity
-    public void refreshActivity(){
-        finish();
-        startActivity(getIntent());
     }
 
     public void sortByName(){
@@ -180,10 +167,11 @@ public class MainActivity extends AppCompatActivity {
             TextView textSong = myView.findViewById(R.id.txtView1);
             textSong.setSelected(true);
             textSong.setText(items[i]);
-            textSong.setOnClickListener(v -> openPlaySongActivity(i));
-            ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
             ArrayList<File> list;
             list = isSortedByName?mySongsCopy:mySongs;
+            textSong.setOnClickListener(v -> openPlaySongActivity(i,list));
+            ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
+
             if(favSongList.contains(Integer.toString(list.get(i).hashCode()))){
                 toggleButton.setChecked(true);
             }
@@ -201,7 +189,6 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("dbQuery", "1 song removed");
                     }
                 }
-                Log.d("dbQuery", "f: "+favSongList.toString());
             });
             return myView;
         }
