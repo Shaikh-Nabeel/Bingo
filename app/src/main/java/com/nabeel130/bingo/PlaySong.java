@@ -14,38 +14,45 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class PlaySong extends AppCompatActivity {
-    TextView textView;
-    ImageView play,previous,next;
-    ArrayList<File> songs;
+
+    private TextView textView;
+    private ImageView play;
+    private ArrayList<File> songs;
     static MediaPlayer mediaPlayer;
-    int position;
+    private int position;
     SeekBar seekBar;
     Thread updateSeekBar;
     private TextView currentTime;
     private TextView totalTime;
+    private String className;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_song);
+
+        //UI variables
         textView = findViewById(R.id.textView);
         seekBar = findViewById(R.id.seekBar);
         play = findViewById(R.id.play);
-        previous = findViewById(R.id.previous);
-        next = findViewById(R.id.next);
+        ImageView previous = findViewById(R.id.previous);
+        ImageView next = findViewById(R.id.next);
         currentTime = findViewById(R.id.currentDuration);
         totalTime = findViewById(R.id.totalDuration);
+
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
         songs =(ArrayList) bundle.getParcelableArrayList("songList");
-//      textContent = bundle.getString("currSong");
         position = bundle.getInt("position");
+        className = bundle.getString("className");
+
         if (mediaPlayer != null) {
             mediaPlayer.stop();
             mediaPlayer.release();
         }
         playSong(position);
+
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -101,11 +108,19 @@ public class PlaySong extends AppCompatActivity {
 
     }
 
-
+    private void updateCustomAdapter(int position){
+        if(className.equals(getString(R.string.main_activity))) {
+            MainActivity.clickedOnIndex = position;
+            MainActivity.ca.notifyDataSetChanged();
+        }
+        else if(className.equals(getString(R.string.favorite_song))){
+            FavoriteSongs.clickedOnIndex = position;
+            FavoriteSongs.customAdapter.notifyDataSetChanged();
+        }
+    }
 
     private void playSong(int position){
-        currentTime.setText(getString(R.string.defaultTime));
-        totalTime.setText(getString(R.string.defaultTime));
+        updateCustomAdapter(position);
         try {
             if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                 mediaPlayer.stop();

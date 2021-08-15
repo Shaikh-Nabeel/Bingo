@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -32,11 +33,13 @@ public class MainActivity extends AppCompatActivity {
 
     private ListView listViewOfSong;
     private static String[] items;
-    private static ArrayList<File> mySongs;
+    public static ArrayList<File> mySongs;
     private static ArrayList<File> mySongsCopy;
     public static ArrayList<String> favSongList;
     private static boolean isSortedByName = false;
     public static CustomAdapter ca;
+    public static int clickedOnIndex= -1;
+    public static int hashOfCurrentSong = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
                                 ca.notifyDataSetChanged();
                             }
                             else{
+
                                 defaultSort(mySongs);
                                 isSortedByName = false;
                                 ca.notifyDataSetChanged();
@@ -111,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this,PlaySong.class);
         intent.putExtra("songList",list);
         intent.putExtra("position",position);
+        intent.putExtra("className", getString(R.string.main_activity));
         startActivity(intent);
     }
 
@@ -121,12 +126,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void defaultSort(ArrayList<File> song){
         for(int i=0; i<song.size(); i++){
+            if(song.get(i).hashCode() == hashOfCurrentSong)
+                clickedOnIndex = i;
             items[i] = song.get(i).getName().replace(".mp3","");
         }
     }
 
     //fetching song from external storage
-    public ArrayList<File> fetchSong(File file){
+    public static ArrayList<File> fetchSong(File file){
         ArrayList<File> list = new ArrayList<>();
         File[] songs = file.listFiles();
         if(songs != null){
@@ -165,11 +172,18 @@ public class MainActivity extends AppCompatActivity {
         public View getView(int i, View view, ViewGroup viewGroup) {
             @SuppressLint({"ViewHolder", "InflateParams"}) View myView = getLayoutInflater().inflate(R.layout.list_item, null);
             TextView textSong = myView.findViewById(R.id.txtView1);
-            textSong.setSelected(true);
             textSong.setText(items[i]);
             ArrayList<File> list;
             list = isSortedByName?mySongsCopy:mySongs;
-            textSong.setOnClickListener(v -> openPlaySongActivity(i,list));
+
+            //assigning magenta colour on item which is being clicked
+            if(clickedOnIndex == i) {
+                textSong.setSelected(true);
+                textSong.setTextColor(Color.MAGENTA);
+                hashOfCurrentSong = list.get(i).hashCode();
+            }
+
+            textSong.setOnClickListener(v -> openPlaySongActivity(i, list));
             ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
 
             if(favSongList.contains(Integer.toString(list.get(i).hashCode()))){

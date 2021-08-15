@@ -2,6 +2,7 @@ package com.nabeel130.bingo;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -21,7 +22,8 @@ import java.util.ArrayList;
 public class FavoriteSongs extends AppCompatActivity {
     private ArrayList<File> finalList;
     private static String[] items;
-
+    public static CustomAdapter customAdapter;
+    public static int clickedOnIndex= -1;
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -50,7 +52,7 @@ public class FavoriteSongs extends AppCompatActivity {
 
             //extracting name of the song
             refreshList();
-            CustomAdapter customAdapter = new CustomAdapter();
+            customAdapter = new CustomAdapter();
             listView.setAdapter(customAdapter);
         }
 
@@ -67,6 +69,7 @@ public class FavoriteSongs extends AppCompatActivity {
         Intent intent = new Intent(FavoriteSongs.this,PlaySong.class);
         intent.putExtra("songList",finalList);
         intent.putExtra("position",position);
+        intent.putExtra("className", getString(R.string.favorite_song));
         startActivity(intent);
     }
 
@@ -95,7 +98,10 @@ public class FavoriteSongs extends AppCompatActivity {
             textSong.setText(items[i]);
             textSong.setOnClickListener(v -> openPlaySongActivity(i));
             ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
-
+            if(clickedOnIndex == i) {
+                textSong.setSelected(true);
+                textSong.setTextColor(Color.MAGENTA);
+            }
             toggleButton.setChecked(true);
 
             toggleButton.setOnClickListener(v -> {
