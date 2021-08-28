@@ -3,14 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginEnd="8dp"
-    android:layout_marginTop="8dp"
-    android:layout_marginStart="8dp">
+    android:backgroundTint="@color/black">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp" >
+        android:padding="8dp"
+        android:background="@drawable/content_of_listitem"
+        android:layout_margin="2dp">
 
         <ToggleButton
             android:id="@+id/imgSong"
@@ -42,7 +42,8 @@
             android:padding="6dp"
             android:scrollHorizontally="true"
             android:singleLine="true"
-            android:textSize="15sp">
+            android:textSize="15sp"
+            android:textColor="@color/white">
         </TextView>
 
     </RelativeLayout>

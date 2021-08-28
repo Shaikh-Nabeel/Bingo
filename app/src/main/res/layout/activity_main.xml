@@ -3,59 +3,63 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
+    tools:context=".MainActivity"
+    android:orientation="horizontal"
+    android:background="@color/black">
     <RelativeLayout
-        android:id="@+id/linLayout"
+        android:id="@+id/showOnStartLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
         >
-
-        <Button
-            android:id="@+id/sorting"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_gravity="start"
-            android:layout_marginStart="5dp"
-            android:layout_marginTop="5dp"
-            android:textSize="12sp"
-            android:text="@string/SortByName"
-            android:textAllCaps="false" />
-
-        <Button
-            android:id="@+id/favSongIcon"
+        <ImageView
+            android:id="@+id/imageViewOfApp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="5dp"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            android:gravity="end"
-            android:text="@string/favorite"
-            android:textAllCaps="false" />
-
-        <View
-            android:id="@+id/simpleView1"
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:background="#c0c0c0"
+            android:layout_centerInParent="true"
+            android:contentDescription="@string/app_name"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="20dp"
             />
+
+        <TextView
+            android:id="@+id/txtViewOfApp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/imageViewOfApp"
+            android:layout_centerHorizontal="true"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+            android:textSize="50sp"
+            android:textStyle="bold" />
     </RelativeLayout>
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/customToolB"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:background="?attr/colorPrimaryVariant"
+        android:maxHeight="?attr/actionBarSize"
+        android:theme="?attr/actionBarTheme"
+        />
 
 
     <ListView
         android:id="@+id/listViewOfSongs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/linLayout"
+        android:layout_below="@+id/customToolB"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
+        android:layout_marginTop="2dp" />
+    <TextView
+        android:id="@+id/txtShowIfNoSong1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:textSize="24sp"
         />
-
 </RelativeLayout>

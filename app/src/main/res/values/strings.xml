@@ -2,10 +2,16 @@
     <string name="app_name">Bingo</string>
     <string name="space"> </string>
     <string name="favorite">Favourite</string>
-    <string name="SortByName">Sort by Name</string>
+    <string name="SortByName">By Name</string>
     <string name="defaultSort">All Song</string>
     <string name="defaultTime">00:00</string>
-    <string name="loading">Loading…</string>
+    <string name="loading">Just a sec..</string>
     <string name="main_activity">MainActivity</string>
     <string name="favorite_song">FavoriteSong</string>
+    <string name="sort">Sort</string>
+    <string name="more">More</string>
+    <string name="back">Back</string>
+    <string name="sortByDate">By Date</string>
+    <string name="noSongs">[ No Songs in Favourite ]</string>
+    <string name="noSongs2">[ No Songs ]</string>
 </resources>

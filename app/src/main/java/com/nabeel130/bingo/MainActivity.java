@@ -1,19 +1,28 @@
 package com.nabeel130.bingo;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.appcompat.widget.Toolbar;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.BaseAdapter;
-import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
@@ -29,6 +38,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private ListView listViewOfSong;
@@ -36,62 +46,68 @@ public class MainActivity extends AppCompatActivity {
     public static ArrayList<File> mySongs;
     private static ArrayList<File> mySongsCopy;
     public static ArrayList<String> favSongList;
-    private static boolean isSortedByName = false;
+    public static ArrayList<File> list;
     public static CustomAdapter ca;
     public static int clickedOnIndex= -1;
     public static int hashOfCurrentSong = -1;
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         listViewOfSong = findViewById(R.id.listViewOfSongs);
+        listViewOfSong.setDivider(null);
+        listViewOfSong.setDividerHeight(2);
+
         Dexter.withContext(this)
                 .withPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
                 .withListener(new PermissionListener() {
                     @Override
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
-                        //fetching all the songs
-                        mySongs = fetchSong(Environment.getExternalStorageDirectory());
-                        mySongsCopy = new ArrayList<>();
-                        mySongsCopy.addAll(mySongs);
+                        new Thread(){
+                            @Override
+                        public void run(){
+                                RelativeLayout rl_start = findViewById(R.id.showOnStartLayout);
+                                runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    rl_start.setBackground(getDrawable(R.color.design_default_color_primary_variant));
+                                    TextView tempText = findViewById(R.id.txtViewOfApp);
+                                    tempText.setText(R.string.app_name);
+                                    ImageView tempImg = findViewById(R.id.imageViewOfApp);
+                                    tempImg.setImageResource(R.drawable.app_icon_);
+                                }
+                                });
 
-                        //fetching favourite songs
-                        DbHandler dbHandler = new DbHandler(getApplicationContext());
-                        favSongList = (ArrayList<String>) dbHandler.getAllSongs();
-
-                        //array of songs name
-                        items = new String[mySongs.size()];
-                        defaultSort(mySongs);
-
-                        ca = new CustomAdapter();
-                        listViewOfSong.setAdapter(ca);
-
-                        //sorting functions
-                        Button sortingBtn = findViewById(R.id.sorting);
-                        sortingBtn.setOnClickListener(v -> {
-                            if(sortingBtn.getText().equals(getString(R.string.SortByName))) {
-                                sortByName();
-                                isSortedByName = true;
-                                sortingBtn.setText(R.string.defaultSort);
-                                ca.notifyDataSetChanged();
+                        try {
+                            sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ViewGroup parent = (ViewGroup) rl_start.getParent();
+                                if (parent != null)
+                                    parent.removeView(rl_start);
+                                FetchSongs fetchSongs = new FetchSongs();
+                                fetchSongs.execute();
+                                Toolbar toolbar = findViewById(R.id.customToolB);
+                                toolbar.setTitleTextColor(getResources().getColor(R.color.white));
+                                toolbar.setTitle(R.string.app_name);
+                                setSupportActionBar(toolbar);
                             }
-                            else{
 
-                                defaultSort(mySongs);
-                                isSortedByName = false;
-                                ca.notifyDataSetChanged();
-                                sortingBtn.setText(R.string.SortByName);
-                            }
                         });
-
-                        if(isSortedByName)
-                            sortingBtn.performClick();
+                    }
+                }.start();
                     }
 
                     @Override
                     public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-
+                        finish();
                     }
 
                     @Override
@@ -100,14 +116,68 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .check();
+    }
 
-        //Favorite Song Icon
-        Button favSong = findViewById(R.id.favSongIcon);
-        favSong.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this,FavoriteSongs.class)
-                    .putExtra("mySongs", mySongs);
-            startActivity(intent);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.my_menu,menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+
+    public void sortByDate(){
+        Collections.sort(mySongsCopy,(o1,o2)-> {
+            long d = o2.lastModified() - o1.lastModified();
+            if(d == 0)return 0;
+            return d>0?1:-1;
         });
+        defaultSort(mySongsCopy);
+    }
+
+    //this method sort playlist
+    public void handleSorting(String text){
+        if(text.equals(getString(R.string.SortByName))) {
+            sortByName();
+            list = mySongsCopy;
+        }
+        else if(text.equals(getString(R.string.defaultSort))){
+            defaultSort(mySongs);
+            list = mySongs;
+        }else if(text.equals(getString(R.string.sortByDate))){
+            sortByDate();
+            list = mySongsCopy;
+        }
+        PlaySong playSong = new PlaySong();
+        playSong.setList(list,clickedOnIndex);
+        ca.notifyDataSetChanged();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem menuItem){
+        int id = menuItem.getItemId();
+
+        if(id == R.id.favoriteSongBtn){
+            Intent intent = new Intent(MainActivity.this,FavoriteSongs.class);
+            startActivity(intent);
+        }else if(id == R.id.sortByNameBtn){
+            handleSorting(menuItem.getTitle().toString());
+        }else if(id == R.id.defaultSortBtn){
+            handleSorting(menuItem.getTitle().toString());
+        }else if(id == R.id.sortByDateBtn){
+            handleSorting(menuItem.getTitle().toString());
+        }
+
+        return super.onOptionsItemSelected(menuItem);
+    }
+
+    public void updateUI(){
+        items = new String[mySongs.size()];
+        defaultSort(mySongs);
+        list = mySongs;
+
+        ca = new CustomAdapter();
+        listViewOfSong.setAdapter(ca);
+
     }
 
     //redirecting to playSong Activity
@@ -149,6 +219,53 @@ public class MainActivity extends AppCompatActivity {
         return list;
     }
 
+    private void setTextIfNoSong(){
+        TextView txtView = findViewById(R.id.txtShowIfNoSong1);
+        txtView.setText(getString(R.string.noSongs2));
+        txtView.setTextColor(Color.WHITE);
+    }
+
+    private class FetchSongs extends AsyncTask<Void, Void, String>{
+
+        Dialog dialog = new Dialog(MainActivity.this);
+        @Override
+        protected String doInBackground(Void... voids) {
+            mySongs = fetchSong(Environment.getExternalStorageDirectory());
+            mySongsCopy = new ArrayList<>();
+            mySongsCopy.addAll(mySongs);
+
+            //fetching favourite songs
+            DbHandler dbHandler = new DbHandler(MainActivity.this);
+            favSongList = (ArrayList<String>) dbHandler.getAllSongs();
+            if(mySongs.isEmpty()){
+                setTextIfNoSong();
+                return "noSong";
+            }
+            return "executed";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if(result == null) return;
+            if(result.equals("noSongs")){
+                dialog.dismiss();
+                return;
+            }
+            dialog.dismiss();
+            updateUI();
+        }
+
+        @SuppressLint("UseCompatLoadingForDrawables")
+        @Override
+        protected void onPreExecute() {
+
+            dialog.setCancelable(false);
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialog.setContentView(R.layout.custom_dialog);
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.show();
+        }
+    }
 
     class CustomAdapter extends BaseAdapter
     {
@@ -173,8 +290,6 @@ public class MainActivity extends AppCompatActivity {
             @SuppressLint({"ViewHolder", "InflateParams"}) View myView = getLayoutInflater().inflate(R.layout.list_item, null);
             TextView textSong = myView.findViewById(R.id.txtView1);
             textSong.setText(items[i]);
-            ArrayList<File> list;
-            list = isSortedByName?mySongsCopy:mySongs;
 
             //assigning magenta colour on item which is being clicked
             if(clickedOnIndex == i) {
@@ -200,7 +315,6 @@ public class MainActivity extends AppCompatActivity {
                     DbHandler db = new DbHandler(MainActivity.this);
                     if(db.removeSong(list.get(i).hashCode())){
                         favSongList.remove(Integer.toString(list.get(i).hashCode()));
-                        Log.d("dbQuery", "1 song removed");
                     }
                 }
             });
