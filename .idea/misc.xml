@@ -5,6 +5,7 @@
       <map>
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/drawable/content_of_listitem.xml" value="0.2125" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/drawable/custom_app_icon.xml" value="0.12604166666666666" />
+        <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/drawable/custom_dialog2.xml" value="0.2125" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/drawable/custom_dialog_box.xml" value="0.2125" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/drawable/ic_baseline_more_vert_24.xml" value="0.2125" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/drawable/next.xml" value="0.2125" />
@@ -14,9 +15,11 @@
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/layout/activity_main.xml" value="0.18" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/layout/activity_play_song.xml" value="0.19635416666666666" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/layout/custom_dialog.xml" value="0.19635416666666666" />
+        <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/layout/custom_dialog_details.xml" value="0.25" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/layout/fav_songs.xml" value="0.21" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/layout/list_item.xml" value="0.19635416666666666" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/menu/menu_favorite_activity.xml" value="0.19635416666666666" />
+        <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/menu/menu_for_list_item.xml" value="0.25" />
         <entry key="..\:/Users/ShaikhNabs/AndroidStudioProjects/Bingo/app/src/main/res/menu/my_menu.xml" value="0.1" />
       </map>
     </option>

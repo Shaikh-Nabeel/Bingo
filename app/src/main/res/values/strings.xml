@@ -14,4 +14,9 @@
     <string name="sortByDate">By Date</string>
     <string name="noSongs">[ No Songs in Favourite ]</string>
     <string name="noSongs2">[ No Songs ]</string>
+    <string name="songDetails">Details</string>
+    <string name="delete">Delete</string>
+    <string name="name">Name</string>
+    <string name="size">Size</string>
+    <string name="lastModified">Last Modified</string>
 </resources>

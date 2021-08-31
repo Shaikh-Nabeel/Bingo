@@ -15,37 +15,41 @@
         app:layout_constraintBottom_toTopOf="@+id/linearLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView2"
+        app:layout_constraintTop_toBottomOf="@+id/textView"
         />
 
     <ImageView
-        android:id="@+id/imageView2"
-        android:layout_width="272dp"
+        android:id="@+id/imageViewOfCurrSong"
+        android:layout_width="286dp"
         android:layout_height="286dp"
         android:contentDescription="@string/app_name"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.496"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.313"
+        app:layout_constraintVertical_bias="0.213"
         app:srcCompat="@drawable/default_image" />
 
     <TextView
         android:id="@+id/textView"
-        android:layout_width="350dp"
+        android:layout_width="wrap_content"
         android:layout_height="33dp"
         android:gravity="center"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:maxLines="1"
-        app:layout_constraintBottom_toTopOf="@+id/imageView2"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewOfCurrSong"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.28000001"
         android:textColor="@color/white"
-        />
+        android:ellipsize="marquee"
+        android:singleLine="true"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"
+        tools:ignore="RtlSymmetry" />
 
     <LinearLayout
         android:id="@+id/linearLayout"

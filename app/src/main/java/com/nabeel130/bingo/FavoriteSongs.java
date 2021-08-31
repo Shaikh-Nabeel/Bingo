@@ -15,7 +15,6 @@ import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 
 import com.nabeel130.bingo.DbController.DbHandler;
@@ -98,7 +97,6 @@ public class FavoriteSongs extends AppCompatActivity {
 
     public void openPlaySongActivity(int position){
         Intent intent = new Intent(FavoriteSongs.this,PlaySong.class);
-        intent.putExtra("songList",finalList);
         intent.putExtra("position",position);
         intent.putExtra("className", getString(R.string.favorite_song));
         startActivity(intent);

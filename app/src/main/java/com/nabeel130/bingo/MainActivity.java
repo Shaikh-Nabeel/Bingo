@@ -1,19 +1,33 @@
 package com.nabeel130.bingo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.RecoverableSecurityException;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,21 +36,31 @@ import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.karumi.dexter.Dexter;
+import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.karumi.dexter.listener.single.PermissionListener;
 import com.nabeel130.bingo.DbController.DbHandler;
 
 import java.io.File;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -50,7 +74,9 @@ public class MainActivity extends AppCompatActivity {
     public static CustomAdapter ca;
     public static int clickedOnIndex= -1;
     public static int hashOfCurrentSong = -1;
+    public boolean isGrantedManageStoragePermission = false;
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,24 +87,36 @@ public class MainActivity extends AppCompatActivity {
         listViewOfSong.setDivider(null);
         listViewOfSong.setDividerHeight(2);
 
+
+
         Dexter.withContext(this)
-                .withPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                .withListener(new PermissionListener() {
+                .withPermissions(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .withListener(new MultiplePermissionsListener() {
                     @Override
-                    public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
+                    public void onPermissionsChecked(MultiplePermissionsReport report) {
+                        if(report.isAnyPermissionPermanentlyDenied()){
+                            new AlertDialog.Builder(MainActivity.this)
+                                    .setTitle("Permission")
+                                    .setMessage("This Application need particular permissions to start.\nGive permission from App setting.")
+                                    .setPositiveButton("OK", (dialog, which) -> finish())
+                                    .show();
+                            return;
+                        }
+                        if(!report.areAllPermissionsGranted()){
+                            Toast.makeText(MainActivity.this, "App need particular permissions to start", Toast.LENGTH_SHORT).show();
+                            finish();
+                            return;
+                        }
                         new Thread(){
                             @Override
                         public void run(){
                                 RelativeLayout rl_start = findViewById(R.id.showOnStartLayout);
-                                runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
+                                runOnUiThread(() -> {
                                     rl_start.setBackground(getDrawable(R.color.design_default_color_primary_variant));
                                     TextView tempText = findViewById(R.id.txtViewOfApp);
                                     tempText.setText(R.string.app_name);
                                     ImageView tempImg = findViewById(R.id.imageViewOfApp);
                                     tempImg.setImageResource(R.drawable.app_icon_);
-                                }
                                 });
 
                         try {
@@ -86,36 +124,48 @@ public class MainActivity extends AppCompatActivity {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                ViewGroup parent = (ViewGroup) rl_start.getParent();
-                                if (parent != null)
-                                    parent.removeView(rl_start);
-                                FetchSongs fetchSongs = new FetchSongs();
-                                fetchSongs.execute();
-                                Toolbar toolbar = findViewById(R.id.customToolB);
-                                toolbar.setTitleTextColor(getResources().getColor(R.color.white));
-                                toolbar.setTitle(R.string.app_name);
-                                setSupportActionBar(toolbar);
-                            }
-
+                        runOnUiThread(() -> {
+                            ViewGroup parent = (ViewGroup) rl_start.getParent();
+                            if (parent != null)
+                                parent.removeView(rl_start);
+                            FetchSongs fetchSongs = new FetchSongs();
+                            fetchSongs.execute();
+                            Toolbar toolbar = findViewById(R.id.customToolB);
+                            toolbar.setTitleTextColor(getResources().getColor(R.color.white));
+                            toolbar.setTitle(R.string.app_name);
+                            setSupportActionBar(toolbar);
                         });
                     }
                 }.start();
                     }
 
                     @Override
-                    public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-                        finish();
-                    }
-
-                    @Override
-                    public void onPermissionRationaleShouldBeShown(PermissionRequest permissionRequest, PermissionToken permissionToken) {
+                    public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken permissionToken) {
                         permissionToken.continuePermissionRequest();
                     }
-                })
+                }).onSameThread()
                 .check();
+        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R){
+            Dexter.withContext(this)
+                    .withPermission(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
+                    .withListener(new PermissionListener() {
+                        @Override
+                        public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
+                            isGrantedManageStoragePermission = true;
+                        }
+
+                        @Override
+                        public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
+
+                        }
+
+                        @Override
+                        public void onPermissionRationaleShouldBeShown(PermissionRequest permissionRequest, PermissionToken permissionToken) {
+                            permissionToken.continuePermissionRequest();
+                        }
+                    }).onSameThread()
+            .check();
+        }
     }
 
     @Override
@@ -181,9 +231,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //redirecting to playSong Activity
-    public void openPlaySongActivity(int position, ArrayList<File> list){
+    public void openPlaySongActivity(int position){
         Intent intent = new Intent(MainActivity.this,PlaySong.class);
-        intent.putExtra("songList",list);
         intent.putExtra("position",position);
         intent.putExtra("className", getString(R.string.main_activity));
         startActivity(intent);
@@ -195,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void defaultSort(ArrayList<File> song){
+        items = new String[song.size()];
         for(int i=0; i<song.size(); i++){
             if(song.get(i).hashCode() == hashOfCurrentSong)
                 clickedOnIndex = i;
@@ -267,6 +317,124 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("DefaultLocale")
+    private String getFileSize(File file){
+        String MB = " MB";
+        String KB = " KB";
+        double kb =(double) file.length()/1024;
+        double mb = kb/1024;
+
+        if(mb>1) {
+            return String.format("%.2f", mb) + MB;
+        }
+        return String.format("%.2f", kb) + KB;
+    }
+
+    public void showAlertDialog(String title,String message){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle(title)
+                .setMessage(message)
+                .show();
+    }
+    //delete current song from 'list', 'mySongs', 'mySongsCopy'
+    private void removeFile(File file,int i, boolean isDeleted) throws IntentSender.SendIntentException {
+        if(isDeleted){
+            Toast.makeText(MainActivity.this, "File deleted", Toast.LENGTH_SHORT).show();
+        }else{
+            deleteFileV29plus(file);
+        }
+        try {
+            String currFileHash = Integer.toString(list.get(i).hashCode());
+            list.remove(i);
+            defaultSort(list);
+            ca.notifyDataSetChanged();
+            new Thread(){
+                @Override
+                public void run(){
+                    for(File file: mySongs){
+                        if(Integer.toString(file.hashCode()).equals(currFileHash)) {
+                            mySongs.remove(file);
+                            break;
+                        }
+                    }
+                    for(File file: mySongsCopy){
+                        if(Integer.toString(file.hashCode()).equals(currFileHash)){
+                            mySongsCopy.remove(file);
+                            break;
+                        }
+                    }
+                    if(favSongList.contains(currFileHash)){
+                        favSongList.remove(currFileHash);
+                        DbHandler dbHandler = new DbHandler(MainActivity.this);
+                        dbHandler.removeSong(Integer.parseInt(currFileHash));
+                        if(FavoriteSongs.finalList != null){
+                            for(File file: FavoriteSongs.finalList){
+                                if(Integer.toString(file.hashCode()).equals(currFileHash)){
+                                    FavoriteSongs.finalList.remove(file);
+                                    break;
+                                }
+                            }
+                        }
+                        Log.d("hashCode","1 song removed");
+                    }
+                }
+            }.start();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        PlaySong ps = new PlaySong();
+        ps.setList();
+    }
+
+    private void deleteFileV29plus(File file) throws IntentSender.SendIntentException {
+        String[] projection = {MediaStore.Audio.Media._ID};
+        String selection = MediaStore.Audio.Media.DATA+"=?";
+        String[] selectionArgs = new String[]{file.getAbsolutePath()};
+
+        Uri queryUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        ContentResolver contentResolver = getApplicationContext().getContentResolver();
+        @SuppressLint("Recycle") Cursor c = contentResolver.query(queryUri,projection,selection,selectionArgs,null);
+
+        if(c != null){
+            if(c.moveToFirst()){
+                long id = c.getLong(c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+                Uri deleteUri = ContentUris.withAppendedId(queryUri,id);
+                try {
+                    contentResolver.delete(deleteUri, null, null);
+                }catch(SecurityException s){
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        RecoverableSecurityException recoverableSecurityException;
+                        if(s instanceof RecoverableSecurityException) {
+                            recoverableSecurityException = (RecoverableSecurityException) s;
+                        }
+                        else{
+                            return;
+                        }
+                        IntentSender intentSender = recoverableSecurityException.getUserAction().getActionIntent().getIntentSender();
+                        startIntentSenderForResult(intentSender,34,null,0,0,0,null);
+                    }
+                }
+
+            }else{
+                Toast.makeText(MainActivity.this,"Couldn't delete", Toast.LENGTH_SHORT).show();
+            }
+            c.close();
+        }
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 344) {
+            if (resultCode == Activity.RESULT_OK) {
+                Toast.makeText(MainActivity.this, "File deleted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Couldn't delete", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     class CustomAdapter extends BaseAdapter
     {
 
@@ -285,6 +453,7 @@ public class MainActivity extends AppCompatActivity {
             return 0;
         }
 
+        @SuppressLint("ViewHolder")
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             @SuppressLint({"ViewHolder", "InflateParams"}) View myView = getLayoutInflater().inflate(R.layout.list_item, null);
@@ -297,8 +466,57 @@ public class MainActivity extends AppCompatActivity {
                 textSong.setTextColor(Color.MAGENTA);
                 hashOfCurrentSong = list.get(i).hashCode();
             }
+            textSong.setOnLongClickListener(v -> {
+                PopupMenu popupMenu = new PopupMenu(MainActivity.this,textSong);
+                popupMenu.getMenuInflater().inflate(R.menu.menu_for_list_item,popupMenu.getMenu());
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @SuppressLint({"InflateParams", "ResourceType"})
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        int id = item.getItemId();
+                        if(id == R.id.songDetailsBtn) {
 
-            textSong.setOnClickListener(v -> openPlaySongActivity(i, list));
+                            File file = list.get(i);
+                            @SuppressLint("SimpleDateFormat") DateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                            Date date = new Date(file.lastModified());
+
+                            Dialog builder = new Dialog(MainActivity.this);
+                            builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                            builder.setContentView(R.layout.custom_dialog_details);
+                            builder.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                            TextView nameOfSong, sizeOfSong, lastModifiedDate;
+                            nameOfSong = builder.findViewById(R.id.songNameForDialog);
+                            sizeOfSong = builder.findViewById(R.id.sizeOfTheSong);
+                            lastModifiedDate = builder.findViewById(R.id.lastModifiedOfSong);
+                            nameOfSong.setText(file.getName());
+                            sizeOfSong.setText(getFileSize(file));
+                            lastModifiedDate.setText(sdf.format(date));
+                            builder.show();
+
+                        }
+                        else if(id == R.id.deleteSong){
+                            if(clickedOnIndex == i){
+                                Toast.makeText(MainActivity.this,"Couldn't delete", Toast.LENGTH_SHORT).show();
+                                return true;
+                            }
+                            File file = new File(String.valueOf(list.get(i)));
+                            if(file.exists()){
+                                boolean isDeleted = file.delete();
+                                try {
+                                    removeFile(file,i, isDeleted);
+                                } catch (IntentSender.SendIntentException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                        }
+                        return true;
+                    }
+                });
+                popupMenu.show();
+                return true;
+            });
+            textSong.setOnClickListener(v -> openPlaySongActivity(i));
             ToggleButton toggleButton = myView.findViewById(R.id.imgSong);
 
             if(favSongList.contains(Integer.toString(list.get(i).hashCode()))){

@@ -1,12 +1,13 @@
 package com.nabeel130.bingo;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,13 +30,23 @@ public class PlaySong extends AppCompatActivity {
     Thread updateSeekBar;
     private TextView currentTime;
     private TextView totalTime;
-    private static String className;
+    public static String className;
+    private ImageView imageViewOfSong;
 
     public void setList(ArrayList<File> list,int position){
-        if(className == null || className.equals("FavoriteSongs"))
+        if(className == null || className.equals("FavoriteSong"))
             return;
         songs = list;
         PlaySong.position = position;
+    }
+
+    public void setList(){
+        if(className == null)
+                return;
+        if(className.equals("FavoriteSong"))
+            songs = FavoriteSongs.finalList;
+        else
+            songs = MainActivity.list;
     }
 
 //    @SuppressLint("UseCompatLoadingForDrawables")
@@ -77,6 +88,7 @@ public class PlaySong extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_song);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         //UI variables
         textView = findViewById(R.id.textView);
         seekBar = findViewById(R.id.seekBar);
@@ -85,10 +97,11 @@ public class PlaySong extends AppCompatActivity {
         ImageView next = findViewById(R.id.next);
         currentTime = findViewById(R.id.currentDuration);
         totalTime = findViewById(R.id.totalDuration);
+        imageViewOfSong = findViewById(R.id.imageViewOfCurrSong);
 
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
-        position = bundle.getInt("position");
+        int currPos = bundle.getInt("position");
         className = bundle.getString("className");
 
         if(className.equals(getString(R.string.favorite_song))){
@@ -98,16 +111,13 @@ public class PlaySong extends AppCompatActivity {
         }else{
             songs = new ArrayList<>();
         }
-
+        position = currPos;
 
         if (mediaPlayer != null) {
             mediaPlayer.stop();
             mediaPlayer.release();
         }
         playSong(position);
-
-
-
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -115,9 +125,7 @@ public class PlaySong extends AppCompatActivity {
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStartTrackingTouch(SeekBar seekBar) { }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
@@ -138,7 +146,6 @@ public class PlaySong extends AppCompatActivity {
                 play.setImageResource(R.drawable.pause);
             }
         });
-
     }
 
     private void manageSeekBar(){
@@ -160,7 +167,6 @@ public class PlaySong extends AppCompatActivity {
             }
         };
         updateSeekBar.start();
-
     }
 
     private void updateCustomAdapter(int position){
@@ -173,6 +179,24 @@ public class PlaySong extends AppCompatActivity {
             FavoriteSongs.customAdapter.notifyDataSetChanged();
         }
     }
+
+    private void setAlbumImage(){
+        byte[] art;
+        MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever();
+        metadataRetriever.setDataSource(songs.get(position).toString());
+        try{
+            art = metadataRetriever.getEmbeddedPicture();
+            Bitmap bitmap = BitmapFactory.decodeByteArray(art,0,art.length);
+            imageViewOfSong.setImageBitmap(bitmap);
+        }catch (Exception e){
+            imageViewOfSong.setImageResource(R.drawable.default_image);
+        }
+    }
+
+//    private void setStaticFieldsOfSong(String... a){
+//        textView.setText(songs.get(position).toString().replace(".mp3",""));
+//        totalTime.setText(null);
+//    }
 
     private void playSong(int position){
         updateCustomAdapter(position);
@@ -187,7 +211,7 @@ public class PlaySong extends AppCompatActivity {
         textView.setText(songs.get(position).getName().replace(".mp3",""));
         Uri uri2 = Uri.parse(songs.get(position).toString());
         mediaPlayer = MediaPlayer.create(PlaySong.this,uri2);
-        int duration = 0;
+        int duration;
         try {
             mediaPlayer.start();
             duration = mediaPlayer.getDuration();
@@ -199,6 +223,7 @@ public class PlaySong extends AppCompatActivity {
             finish();
             return;
         }
+        setAlbumImage();
         try {
             if (updateSeekBar.isAlive())
                 updateSeekBar.interrupt();
@@ -231,7 +256,6 @@ public class PlaySong extends AppCompatActivity {
         String time = "";
         int min = duration/1000/60;
         int sec = duration/1000%60;
-
         time+=min+":";
         if(sec<10)
         {
@@ -242,4 +266,3 @@ public class PlaySong extends AppCompatActivity {
         return time;
     }
 }
-
