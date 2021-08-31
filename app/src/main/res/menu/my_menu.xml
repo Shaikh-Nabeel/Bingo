@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/favoriteSongBtn"
+        android:title="@string/favorite"
+        android:icon="@drawable/ic_baseline_favorite_24"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:icon="@drawable/ic_baseline_more_vert_24"
+        app:showAsAction="always"
+        android:title="@string/more">
+        <menu>
+            <item
+                android:id="@+id/sortByBtn"
+                android:title="@string/sort"
+                app:showAsAction="always"
+                >
+                <menu>
+                    <item
+                        android:id="@+id/defaultSortBtn"
+                        android:title="@string/defaultSort"/>
+                    <item
+                        android:id="@+id/sortByNameBtn"
+                        android:title="@string/SortByName"/>
+                    <item
+                        android:id="@+id/sortByDateBtn"
+                        android:title="@string/sortByDate"/>
+                </menu>
+            </item>
+        </menu>
+    </item>
+
+</menu>
