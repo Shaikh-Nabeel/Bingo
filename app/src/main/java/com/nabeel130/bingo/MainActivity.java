@@ -1,23 +1,27 @@
 package com.nabeel130.bingo;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.RecoverableSecurityException;
 import android.content.ContentResolver;
 import android.content.ContentUris;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -25,7 +29,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
@@ -54,13 +57,11 @@ import com.nabeel130.bingo.DbController.DbHandler;
 
 import java.io.File;
 import java.text.DateFormat;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -75,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     public static int clickedOnIndex= -1;
     public static int hashOfCurrentSong = -1;
     public boolean isGrantedManageStoragePermission = false;
+    private int posOfDeletedItem;
 
     @RequiresApi(api = Build.VERSION_CODES.R)
     @SuppressLint("UseCompatLoadingForDrawables")
@@ -88,55 +90,60 @@ public class MainActivity extends AppCompatActivity {
         listViewOfSong.setDividerHeight(2);
 
 
-
         Dexter.withContext(this)
                 .withPermissions(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .withListener(new MultiplePermissionsListener() {
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport report) {
                         if(report.isAnyPermissionPermanentlyDenied()){
-                            new AlertDialog.Builder(MainActivity.this)
-                                    .setTitle("Permission")
-                                    .setMessage("This Application need particular permissions to start.\nGive permission from App setting.")
-                                    .setPositiveButton("OK", (dialog, which) -> finish())
-                                    .show();
-                            return;
+                            if(getApplicationContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+                                new AlertDialog.Builder(MainActivity.this)
+                                        .setTitle("Permission")
+                                        .setMessage("This Application need particular permissions to start.\nGive permission from App setting.")
+                                        .setPositiveButton("OK", (dialog, which) -> finish())
+                                        .show();
+                                return;
+                            }
                         }
                         if(!report.areAllPermissionsGranted()){
-                            Toast.makeText(MainActivity.this, "App need particular permissions to start", Toast.LENGTH_SHORT).show();
-                            finish();
-                            return;
+                            if(getApplicationContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED){
+                                Toast.makeText(MainActivity.this, "App need particular permissions to start", Toast.LENGTH_SHORT).show();
+                                finish();
+                                return;
+                            }
                         }
-                        new Thread(){
-                            @Override
+
+                    new Thread(){
+                        @Override
                         public void run(){
                                 RelativeLayout rl_start = findViewById(R.id.showOnStartLayout);
                                 runOnUiThread(() -> {
-                                    rl_start.setBackground(getDrawable(R.color.design_default_color_primary_variant));
+                                    rl_start.setBackground(getDrawable(R.color.purple_700));
                                     TextView tempText = findViewById(R.id.txtViewOfApp);
                                     tempText.setText(R.string.app_name);
                                     ImageView tempImg = findViewById(R.id.imageViewOfApp);
                                     tempImg.setImageResource(R.drawable.app_icon_);
                                 });
 
-                        try {
-                            sleep(1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            try {
+                                sleep(1000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            runOnUiThread(() -> {
+                                ViewGroup parent = (ViewGroup) rl_start.getParent();
+                                if (parent != null)
+                                    parent.removeView(rl_start);
+                                FetchSongs fetchSongs = new FetchSongs();
+                                fetchSongs.execute();
+                                Toolbar toolbar = findViewById(R.id.customToolB);
+                                toolbar.setTitleTextColor(getResources().getColor(R.color.white));
+                                toolbar.setTitle(R.string.app_name);
+                                setSupportActionBar(toolbar);
+                            });
                         }
-                        runOnUiThread(() -> {
-                            ViewGroup parent = (ViewGroup) rl_start.getParent();
-                            if (parent != null)
-                                parent.removeView(rl_start);
-                            FetchSongs fetchSongs = new FetchSongs();
-                            fetchSongs.execute();
-                            Toolbar toolbar = findViewById(R.id.customToolB);
-                            toolbar.setTitleTextColor(getResources().getColor(R.color.white));
-                            toolbar.setTitle(R.string.app_name);
-                            setSupportActionBar(toolbar);
-                        });
-                    }
-                }.start();
+                    }.start();
+
                     }
 
                     @Override
@@ -145,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }).onSameThread()
                 .check();
+
         if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R){
             Dexter.withContext(this)
                     .withPermission(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
@@ -280,7 +288,11 @@ public class MainActivity extends AppCompatActivity {
         Dialog dialog = new Dialog(MainActivity.this);
         @Override
         protected String doInBackground(Void... voids) {
-            mySongs = fetchSong(Environment.getExternalStorageDirectory());
+//            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                mySongs = (ArrayList<File>) fetchAudiosForV29plus();
+//            }else{
+//                mySongs = fetchSong(Environment.getExternalStorageDirectory());
+//            }
             mySongsCopy = new ArrayList<>();
             mySongsCopy.addAll(mySongs);
 
@@ -288,7 +300,6 @@ public class MainActivity extends AppCompatActivity {
             DbHandler dbHandler = new DbHandler(MainActivity.this);
             favSongList = (ArrayList<String>) dbHandler.getAllSongs();
             if(mySongs.isEmpty()){
-                setTextIfNoSong();
                 return "noSong";
             }
             return "executed";
@@ -299,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
             if(result == null) return;
             if(result.equals("noSongs")){
                 dialog.dismiss();
+                setTextIfNoSong();
                 return;
             }
             dialog.dismiss();
@@ -308,7 +320,6 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint("UseCompatLoadingForDrawables")
         @Override
         protected void onPreExecute() {
-
             dialog.setCancelable(false);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.custom_dialog);
@@ -336,13 +347,10 @@ public class MainActivity extends AppCompatActivity {
                 .setMessage(message)
                 .show();
     }
+
     //delete current song from 'list', 'mySongs', 'mySongsCopy'
-    private void removeFile(File file,int i, boolean isDeleted) throws IntentSender.SendIntentException {
-        if(isDeleted){
-            Toast.makeText(MainActivity.this, "File deleted", Toast.LENGTH_SHORT).show();
-        }else{
-            deleteFileV29plus(file);
-        }
+    private void removeFile(int i) throws IntentSender.SendIntentException {
+
         try {
             String currFileHash = Integer.toString(list.get(i).hashCode());
             list.remove(i);
@@ -386,32 +394,111 @@ public class MainActivity extends AppCompatActivity {
         ps.setList();
     }
 
+    @SuppressLint("Recycle")
+    private List<File> fetchAudiosForV29plus(){
+        //project is what we want to select
+        String[] projection = {MediaStore.Audio.Media.DATA};
+
+        List<File> listV29plus = new ArrayList<>();
+        Uri uri;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            uri = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL);
+        }else{
+            uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        }
+
+        ContentResolver contentResolver = getContentResolver();
+
+        Cursor c = contentResolver.query(uri,projection,null,null,null);
+        if(c != null){
+            while(c.moveToNext()){
+                  int columnIndex  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+                String fileName = c.getString(columnIndex);
+                if(fileName.endsWith(".mp3") && !fileName.startsWith("."))
+                    listV29plus.add(new File(c.getString(columnIndex)));
+            }
+        }
+        return listV29plus;
+    }
+
+    //launcher for asking permission to user to delete particular file and return result
+    private final ActivityResultLauncher<IntentSenderRequest> launcher = registerForActivityResult(
+            new ActivityResultContracts.StartIntentSenderForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Toast.makeText(this, "deleted", Toast.LENGTH_SHORT).show();
+                    try {
+                        removeFile(posOfDeletedItem);
+                    } catch (IntentSender.SendIntentException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else{
+                    Toast.makeText(this, "Couldn't delete", Toast.LENGTH_SHORT).show();
+                }
+            });
+
     private void deleteFileV29plus(File file) throws IntentSender.SendIntentException {
+
+        //projection is what we want in result,In this case we want ID of the audio file
         String[] projection = {MediaStore.Audio.Media._ID};
+        //selection is 'where' clause like in database (where Media.data =?)
         String selection = MediaStore.Audio.Media.DATA+"=?";
+        //selection Arguments is on what basis should contentResolver fetch result
+        //this execute when selection string contains "?", this ? specify that resolver should look for selectionArgs
         String[] selectionArgs = new String[]{file.getAbsolutePath()};
 
+        //this is from where you want to run the query,in this case it is external storage(scoped storage).
         Uri queryUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         ContentResolver contentResolver = getApplicationContext().getContentResolver();
+        //content resolver will run the query on the device and return Cursor object
         @SuppressLint("Recycle") Cursor c = contentResolver.query(queryUri,projection,selection,selectionArgs,null);
 
         if(c != null){
             if(c.moveToFirst()){
+                //getting id of the file we passed in selectionArguments
                 long id = c.getLong(c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+                //making delete Uri, withAppendedId tells that, delete the file where id = id you passed in it
                 Uri deleteUri = ContentUris.withAppendedId(queryUri,id);
                 try {
+                    //content resolver will run delete query
                     contentResolver.delete(deleteUri, null, null);
+                    //if version if < android 10 then file will be deleted
+                    if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q){
+                        removeFile(posOfDeletedItem);
+                    }
+                    //but if version >= android 10 then it will throw security exception
                 }catch(SecurityException s){
-                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        RecoverableSecurityException recoverableSecurityException;
+
+                    PendingIntent pendingIntent = null;
+                    /*
+                    In android 11 we will call delete request through content resolver
+                    This feature is only available in > android 11, even IDE will request you to add @RequiredApi(R)
+                    */
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+                        ArrayList<Uri> listOfUri= new ArrayList<>();
+                        listOfUri.add(deleteUri);
+                        pendingIntent = MediaStore.createDeleteRequest(contentResolver,listOfUri);
+                    }
+                    /*
+                    but in android 10 security exception can be cast as RecoverableSecurityException
+                    and we can get actionIntent to ask user permission
+                    */
+                    else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         if(s instanceof RecoverableSecurityException) {
-                            recoverableSecurityException = (RecoverableSecurityException) s;
+                            pendingIntent = ((RecoverableSecurityException) s).getUserAction().getActionIntent();
                         }
                         else{
                             return;
                         }
-                        IntentSender intentSender = recoverableSecurityException.getUserAction().getActionIntent().getIntentSender();
-                        startIntentSenderForResult(intentSender,34,null,0,0,0,null);
+                    }
+
+                    //we will get IntentSender and build IntentSenderRequest then launch the request through launder
+                    //launcher is basically prompt which ask user to deny or accept and get result from intent
+                    if(pendingIntent != null){
+                        IntentSender intentSender = pendingIntent.getIntentSender();
+                        IntentSenderRequest request = new IntentSenderRequest.Builder(intentSender).build();
+                        launcher.launch(request);
                     }
                 }
 
@@ -422,18 +509,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 344) {
-            if (resultCode == Activity.RESULT_OK) {
-                Toast.makeText(MainActivity.this, "File deleted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(MainActivity.this, "Couldn't delete", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
 
     class CustomAdapter extends BaseAdapter
     {
@@ -469,49 +544,49 @@ public class MainActivity extends AppCompatActivity {
             textSong.setOnLongClickListener(v -> {
                 PopupMenu popupMenu = new PopupMenu(MainActivity.this,textSong);
                 popupMenu.getMenuInflater().inflate(R.menu.menu_for_list_item,popupMenu.getMenu());
-                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @SuppressLint({"InflateParams", "ResourceType"})
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-                        int id = item.getItemId();
-                        if(id == R.id.songDetailsBtn) {
+                popupMenu.setOnMenuItemClickListener(item -> {
+                    int id = item.getItemId();
+                    if(id == R.id.songDetailsBtn) {
 
-                            File file = list.get(i);
-                            @SuppressLint("SimpleDateFormat") DateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                            Date date = new Date(file.lastModified());
+                        File file = list.get(i);
+                        @SuppressLint("SimpleDateFormat") DateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                        Date date = new Date(file.lastModified());
 
-                            Dialog builder = new Dialog(MainActivity.this);
-                            builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                            builder.setContentView(R.layout.custom_dialog_details);
-                            builder.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-                            TextView nameOfSong, sizeOfSong, lastModifiedDate;
-                            nameOfSong = builder.findViewById(R.id.songNameForDialog);
-                            sizeOfSong = builder.findViewById(R.id.sizeOfTheSong);
-                            lastModifiedDate = builder.findViewById(R.id.lastModifiedOfSong);
-                            nameOfSong.setText(file.getName());
-                            sizeOfSong.setText(getFileSize(file));
-                            lastModifiedDate.setText(sdf.format(date));
-                            builder.show();
+                        Dialog builder = new Dialog(MainActivity.this);
+                        builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                        builder.setContentView(R.layout.custom_dialog_details);
+                        builder.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                        TextView nameOfSong, sizeOfSong, lastModifiedDate;
+                        nameOfSong = builder.findViewById(R.id.songNameForDialog);
+                        sizeOfSong = builder.findViewById(R.id.sizeOfTheSong);
+                        lastModifiedDate = builder.findViewById(R.id.lastModifiedOfSong);
+                        nameOfSong.setText(file.getName());
+                        sizeOfSong.setText(getFileSize(file));
+                        lastModifiedDate.setText(sdf.format(date));
+                        builder.show();
 
-                        }
-                        else if(id == R.id.deleteSong){
-                            if(clickedOnIndex == i){
-                                Toast.makeText(MainActivity.this,"Couldn't delete", Toast.LENGTH_SHORT).show();
-                                return true;
-                            }
-                            File file = new File(String.valueOf(list.get(i)));
-                            if(file.exists()){
-                                boolean isDeleted = file.delete();
-                                try {
-                                    removeFile(file,i, isDeleted);
-                                } catch (IntentSender.SendIntentException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                        }
-                        return true;
                     }
+                    else if(id == R.id.deleteSong){
+                        if(clickedOnIndex == i){
+                            Toast.makeText(MainActivity.this,"Couldn't delete", Toast.LENGTH_SHORT).show();
+                            return true;
+                        }
+                        File file = new File(String.valueOf(list.get(i)));
+                        if(file.exists()){
+//                            boolean isDeleted = file.delete();
+                            try {
+                                posOfDeletedItem = i;
+                                deleteFileV29plus(file);
+                                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q){
+                                    Toast.makeText(MainActivity.this,"File delted",Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (IntentSender.SendIntentException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                    }
+                    return true;
                 });
                 popupMenu.show();
                 return true;

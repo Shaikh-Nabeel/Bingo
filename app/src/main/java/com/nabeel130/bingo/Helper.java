@@ -1,9 +1,16 @@
 package com.nabeel130.bingo;
 
 import android.graphics.Bitmap;
+import android.net.Uri;
 
 public class Helper {
-    public static String songName;
-    public static String songDuration;
-    public static Bitmap bitmap;
+    String songName;
+    long id;
+    Uri contentUri;
+
+    Helper(String songName,long id,Uri uri){
+        this.songName = songName;
+        this.id = id;
+        this.contentUri = uri;
+    }
 }
